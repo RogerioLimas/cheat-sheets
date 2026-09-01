@@ -30,3 +30,6 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Claude Code — configuração pessoal, não compartilhada com o time/repo
+.claude/settings.local.json
