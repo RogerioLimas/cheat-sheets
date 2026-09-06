@@ -19,22 +19,31 @@ import re
 import sys
 
 # Bibliotecas aprovadas (ver docs/SPEC.md, Seção "Stack" / AGENTS.md)
-APPROVED_DEPS = {
-    "fyne.io/fyne",
-    "github.com/yuin/goldmark",
-    "github.com/JohannesKaufmann/html-to-markdown",
-    "golang.design/x/hotkey",
-    "github.com/sahilm/fuzzy",
-    "github.com/stretchr/testify",
+APPROVED_CARGO_DEPS = {
+    "tauri",
+    "tauri-plugin-global-shortcut",
+    "notify",
+}
+APPROVED_NPM_DEPS = {
+    "svelte",
+    "@tauri-apps/api",
+    "@tauri-apps/plugin-fs",
+    "@tauri-apps/plugin-http",
+    "fuzzysort",
+    "markdown-it",
+    "gray-matter",
+    "turndown",
 }
 
 # Padroes de comando Bash sempre bloqueados
 DENY_BASH_PATTERNS = [
     (r"\bgit\s+push\s+.*(--force|-f\b)", "git push --force/-f é bloqueado. Peça confirmação humana explícita."),
+    (r"\bsudo\b", "sudo é bloqueado."),
+    (r"\bchmod\s+(-R\s+)?777\b", "chmod 777 é bloqueado."),
+    (r">\s*/dev/", "redirecionamento para /dev/ é bloqueado."),
     (r"\bgit\s+reset\s+--hard\b.*\borigin/main\b", "reset --hard contra main é bloqueado."),
     (r"\brm\s+-rf\b(?!\s+(dist|build)/)", "rm -rf fora de dist/ ou build/ é bloqueado."),
     (r"\brm\b.*\bdocs/(PRD|SPEC|TASKS)\.md\b", "docs/PRD.md, docs/SPEC.md e docs/TASKS.md são contratos de design — não podem ser deletados por comando."),
-    (r"\bgo\s+mod\s+edit\b", "edição direta de go.mod via 'go mod edit' é bloqueada. Use 'go get <pacote aprovado>' ou peça aprovação."),
 ]
 
 
@@ -43,28 +52,38 @@ def deny_bash(command: str):
         if re.search(pattern, command):
             return reason
 
-    m = re.search(r"\bgo\s+get\s+(-u\s+)?([^\s]+)", command)
+    m = re.search(r"\bcargo\s+add\s+(-D\s+|--dev\s+)?([^\s]+)", command)
     if m:
         pkg = m.group(2).split("@")[0]
-        if not any(pkg.startswith(dep) for dep in APPROVED_DEPS):
+        if pkg not in APPROVED_CARGO_DEPS:
             return (
-                f"'go get {pkg}' adiciona uma dependência fora da lista aprovada "
+                f"'cargo add {pkg}' adiciona uma dependência fora da lista aprovada "
                 f"em AGENTS.md. Pare e peça aprovação explícita do Roger antes de "
-                f"instalar — não tente contornar via go.mod manual."
+                f"instalar — não tente contornar editando Cargo.toml na mão."
+            )
+
+    m = re.search(r"\bnpm\s+(install|i|add)\s+(-D\s+|--save-dev\s+)?([^\s]+)", command)
+    if m:
+        pkg = m.group(3).split("@")[0] if not m.group(3).startswith("@") else m.group(3).rsplit("@", 1)[0]
+        if pkg not in APPROVED_NPM_DEPS:
+            return (
+                f"'npm install {pkg}' adiciona uma dependência fora da lista aprovada "
+                f"em AGENTS.md. Pare e peça aprovação explícita do Roger antes de "
+                f"instalar — não tente contornar editando package.json na mão."
             )
     return None
 
 
 def deny_edit_write(file_path: str):
-    protected_exact = {"go.mod", "go.sum"}
+    protected_exact = {"Cargo.toml", "Cargo.lock", "package.json", "package-lock.json"}
     protected_suffix = ("docs/PRD.md", "docs/SPEC.md", "docs/TASKS.md")
     name = file_path.replace("\\", "/")
     base = name.rsplit("/", 1)[-1]
     if base in protected_exact:
         return (
             f"Edição direta de {base} é bloqueada. Dependências passam por "
-            f"'go get <pacote aprovado>'; qualquer outra mudança em {base} exige "
-            f"aprovação explícita do Roger."
+            f"'cargo add <pacote aprovado>' ou 'npm install <pacote aprovado>'; "
+            f"qualquer outra mudança em {base} exige aprovação explícita do Roger."
         )
     if any(name.endswith(suffix) for suffix in protected_suffix):
         # Edição de conteúdo é permitida (é assim que /rogeros-update funciona);

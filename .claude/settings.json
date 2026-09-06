@@ -1,14 +1,17 @@
 {
   "permissions": {
     "deny": [
+      "Bash(sudo*)",
+      "Bash(ssh*)",
+      "Bash(*chmod 777*)",
       "Bash(git push --force*)",
       "Bash(git push -f*)",
       "Bash(rm -rf*)",
-      "Bash(go mod edit*)",
-      "Edit(go.mod)",
-      "Edit(go.sum)",
-      "Write(go.mod)",
-      "Write(go.sum)"
+      "Bash(*> /dev/*)",
+      "Edit(Cargo.toml)",
+      "Edit(Cargo.lock)",
+      "Edit(package.json)",
+      "Edit(package-lock.json)"
     ]
   },
   "hooks": {
