@@ -1,0 +1,54 @@
+name: security
+
+# Mandatory gate — runs on the server, independent of any developer's machine.
+# Deterministic scanners only (no LLM, no code leaves GitHub's runner beyond
+# public CVE DB downloads). Make this a required check in branch protection.
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sast:
+    name: SAST (Semgrep OWASP)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Semgrep scan
+        run: |
+          python -m pip install --quiet semgrep
+          semgrep --config .security/semgrep.yml \
+                  --config p/owasp-top-ten \
+                  --config p/secrets \
+                  --error .
+
+  deps-iac:
+    name: SCA + IaC + Secrets (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 # v0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          trivy-config: .security/trivy.yaml
+
+  secrets:
+    name: Secret scan (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0   # full history for a complete secret scan
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        env:
+          GITLEAKS_CONFIG: .security/gitleaks.toml

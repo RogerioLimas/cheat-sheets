@@ -1,0 +1,31 @@
+#!/usr/bin/env sh
+# Versioned pre-commit hook. Activated by `make setup` (git config
+# core.hooksPath .githooks) so every machine gets it after one command —
+# no per-dev manual install into .git/hooks.
+#
+# Fast gate: scans only staged changes. Fully local, no network, no LLM.
+# Heavy/full scan lives in `make security` and CI.
+set -eu
+
+echo "pre-commit: security gate (local, zero-token)"
+
+# 1. Secrets — block committing credentials. Scans staged diff only.
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --config .security/gitleaks.toml --redact --verbose
+else
+  echo "  ! gitleaks not installed — skipping secret scan (run 'make setup')"
+fi
+
+# 2. SAST on staged files — SQL injection, XSS, unsafe unwrap, OWASP patterns.
+if command -v semgrep >/dev/null 2>&1; then
+  STAGED=$(git diff --cached --name-only --diff-filter=ACM || true)
+  if [ -n "$STAGED" ]; then
+    # shellcheck disable=SC2086
+    semgrep --config .security/semgrep.yml --config p/owasp-top-ten \
+      --error --quiet $STAGED
+  fi
+else
+  echo "  ! semgrep not installed — skipping SAST (run 'make setup')"
+fi
+
+echo "pre-commit: passed"

@@ -33,3 +33,14 @@ go.work.sum
 
 # Claude Code — configuração pessoal, não compartilhada com o time/repo
 .claude/settings.local.json
+
+# --- Node / frontend ---
+node_modules/
+dist/
+.vite/
+
+# --- Rust / Tauri ---
+src-tauri/target/
+# Tauri codegen output (schemas, mobile projects) — regenerated on build.
+src-tauri/gen/
+src-tauri/*/gen/

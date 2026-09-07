@@ -1,0 +1,26 @@
+# Trivy config — dependency (SCA), IaC, and secret scanning. Local DB cache.
+# Your source code never leaves the machine; Trivy only downloads the public
+# vulnerability DB (CVE metadata). After a DB update you can add --offline-scan.
+#
+# Run: trivy fs --config .security/trivy.yaml .
+scan:
+  scanners:
+    - vuln      # vulnerable dependency versions (npm, NuGet, Cargo, etc.)
+    - misconfig # IaC: Dockerfile, Terraform, k8s
+    - secret    # secrets in files
+  skip-dirs:
+    - node_modules
+    - target
+    - dist
+    - build
+
+severity:
+  - HIGH
+  - CRITICAL
+
+# Fail the command (non-zero exit) when a HIGH/CRITICAL issue is found, so it
+# works as a gate in hooks and CI.
+exit-code: 1
+
+vulnerability:
+  ignore-unfixed: true   # only flag issues that have a fix available

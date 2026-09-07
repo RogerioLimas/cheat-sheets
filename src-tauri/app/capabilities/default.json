@@ -1,0 +1,14 @@
+{
+  "identifier": "default",
+  "description": "Minimal capability set: only the global-shortcut and core window/event permissions this app actually uses (security steering rule 2).",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:window:allow-set-focus",
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister",
+    "global-shortcut:allow-is-registered"
+  ]
+}

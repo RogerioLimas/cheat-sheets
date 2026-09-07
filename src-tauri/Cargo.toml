@@ -1,0 +1,12 @@
+[workspace]
+members = ["core", "app"]
+resolver = "2"
+
+# Size-optimized release profile (per https://tauri.app/concept/size/).
+# Set at the workspace root so it applies to the app binary.
+[profile.release]
+opt-level = "s"   # prioritize small binary size
+lto = true        # link-time optimization
+codegen-units = 1 # better optimization, slower compile
+panic = "abort"   # drop panic-unwinding machinery
+strip = true      # remove debug symbols
