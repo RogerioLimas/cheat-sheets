@@ -32,15 +32,18 @@ rules:
       - pattern: $X.expect(...)
     paths:
       include:
-        - "src-tauri/**/*.rs"
+        - "**/src-tauri/**/*.rs"
       exclude:
         - "**/tests/**"
         - "**/*test*.rs"
 
   - id: svelte-html-injection
-    languages: [typescript, javascript]
+    languages: [generic]
     severity: ERROR
     message: >-
       Rendering with {@html ...} risks XSS. Sanitize (e.g. DOMPurify) before
       rendering untrusted/external content. See security steering rule 5.
-    pattern: "{@html $X}"
+    pattern: "{@html ...}"
+    paths:
+      include:
+        - "*.svelte"

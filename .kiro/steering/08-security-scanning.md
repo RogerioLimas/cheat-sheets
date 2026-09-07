@@ -30,7 +30,6 @@ Deterministic scanners — no LLM, no tokens, code never leaves the machine
 ## Rules for the agent
 - Run scans via these `make` targets, not ad-hoc tool flags, so config stays
   in `.security/`.
-- Prefer `rtk` when running these in the terminal to compress output.
 - Never add a scanner mode that uploads source to a cloud service. Local only.
 - Reference cheat sheets in `docs/cheat-sheets/` for stack-specific guidance
   (Next.js, .NET API / Lambda).
