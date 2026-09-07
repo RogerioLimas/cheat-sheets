@@ -27,9 +27,18 @@ rules:
       .unwrap()/.expect() on a value that may derive from IPC/filesystem input
       can panic and crash the app. Handle the error with Result. See security
       steering rule 8.
-    pattern-either:
-      - pattern: $X.unwrap()
-      - pattern: $X.expect(...)
+    patterns:
+      - pattern-either:
+          - pattern: $X.unwrap()
+          - pattern: $X.expect(...)
+      # Allow unwrap/expect inside test code (rule 8 permits them in tests).
+      # The separate-file excludes below don't catch inline test modules, so
+      # also skip anything inside a `mod tests { ... }` block or a fn annotated
+      # with #[test].
+      - pattern-not-inside: "mod tests { ... }"
+      - pattern-not-inside: |
+          #[test]
+          fn $F() { ... }
     paths:
       include:
         - "**/src-tauri/**/*.rs"
