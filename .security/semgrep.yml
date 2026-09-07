@@ -1,0 +1,46 @@
+# Semgrep config — LOCAL, custom project rules. No cloud, no login, no telemetry.
+#
+# Registry packs (p/owasp-top-ten, p/secrets, p/typescript, p/rust) are passed
+# on the CLI in the Makefile so they can be cached/pinned. This file holds
+# project-specific rules that run alongside them.
+#
+# Run: semgrep --config .security/semgrep.yml --config p/owasp-top-ten --error
+rules:
+  - id: no-sql-string-concat
+    languages: [rust, typescript, javascript]
+    severity: ERROR
+    message: >-
+      SQL built by string concatenation/interpolation. Use parameterized
+      queries (bind parameters), never string building. See security steering.
+    patterns:
+      - pattern-either:
+          - pattern: $Q + $USER
+          - pattern: format!("...{}...", ...)
+      - metavariable-regex:
+          metavariable: $Q
+          regex: (?i).*(select|insert|update|delete|from|where).*
+
+  - id: tauri-command-unwrap-on-input
+    languages: [rust]
+    severity: ERROR
+    message: >-
+      .unwrap()/.expect() on a value that may derive from IPC/filesystem input
+      can panic and crash the app. Handle the error with Result. See security
+      steering rule 8.
+    pattern-either:
+      - pattern: $X.unwrap()
+      - pattern: $X.expect(...)
+    paths:
+      include:
+        - "src-tauri/**/*.rs"
+      exclude:
+        - "**/tests/**"
+        - "**/*test*.rs"
+
+  - id: svelte-html-injection
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Rendering with {@html ...} risks XSS. Sanitize (e.g. DOMPurify) before
+      rendering untrusted/external content. See security steering rule 5.
+    pattern: "{@html $X}"

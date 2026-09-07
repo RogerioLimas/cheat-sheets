@@ -51,8 +51,8 @@ Instead of searching the web or opening documentation manually, users can press 
 - Kubernetes
 - Figma
 - Photoshop
-- Blender
 - Terminal / Shell
+- Vim / Neovim / LazyVim
 - Excel
 - Notion
 

@@ -1,0 +1,17 @@
+# Gitleaks config — 100% local secret scanning. No network.
+# Extends the built-in default ruleset (covers AWS keys, tokens, private keys,
+# etc.) and adds project-specific allowlists.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Paths that never contain real secrets"
+paths = [
+  '''.*\.md$''',            # docs / cheat sheets use placeholder examples
+  '''\.security/.*''',      # this config dir
+  '''.*/tests?/.*''',       # test fixtures use fake creds
+]
+# Allow obvious placeholders so example snippets don't trip the scanner.
+regexes = [
+  '''(?i)(example|placeholder|dummy|fake|test|xxx+|your[-_]?key)''',
+]

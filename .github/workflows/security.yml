@@ -1,0 +1,54 @@
+name: security
+
+# Mandatory gate — runs on the server, independent of any developer's machine.
+# Deterministic scanners only (no LLM, no code leaves GitHub's runner beyond
+# public CVE DB downloads). Make this a required check in branch protection.
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sast:
+    name: SAST (Semgrep OWASP)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Semgrep scan
+        run: |
+          python -m pip install --quiet semgrep
+          semgrep --config .security/semgrep.yml \
+                  --config p/owasp-top-ten \
+                  --config p/secrets \
+                  --error .
+
+  deps-iac:
+    name: SCA + IaC + Secrets (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          trivy-config: .security/trivy.yaml
+
+  secrets:
+    name: Secret scan (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history for a complete secret scan
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_CONFIG: .security/gitleaks.toml
